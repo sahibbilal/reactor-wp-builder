@@ -13,103 +13,45 @@ namespace Reactor\WP\Builder\Admin;
 class Post_Editor {
 
 	/**
+	 * Whether builder mode is active.
+	 *
+	 * @var bool
+	 */
+	private $is_builder_mode = false;
+
+	/**
+	 * Current post ID in builder mode.
+	 *
+	 * @var int
+	 */
+	private $post_id = 0;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		// Inject stubs IMMEDIATELY - before any other hooks
-		$this->inject_stubs_immediately();
-		
 		add_action( 'admin_init', array( $this, 'check_builder_mode' ) );
-		// Enqueue media library FIRST, before React app
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_library' ), 1 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_builder_scripts' ), 5 );
 		add_action( 'edit_form_after_title', array( $this, 'render_builder_interface' ) );
-		add_action( 'admin_head', array( $this, 'prevent_editor_errors' ), -999 ); // Very early priority
-		add_action( 'admin_print_scripts', array( $this, 'prevent_editor_errors_early' ), -999 ); // Very early priority
-		add_action( 'admin_footer', array( $this, 'prevent_editor_errors_footer' ), 999 );
-		add_action( 'admin_print_footer_scripts', array( $this, 'prevent_editor_errors_footer' ), 0 );
 		
-		// Use output buffering to inject stubs before WordPress inline scripts
-		add_action( 'admin_init', array( $this, 'start_output_buffering' ), 1 );
-		// Also inject via script loader tag filter
+		// Use script_loader_tag filter for stub injection
 		add_filter( 'script_loader_tag', array( $this, 'inject_stubs_via_script_tag' ), 1, 2 );
-		// Use shutdown hook to ensure output buffering works
-		add_action( 'shutdown', array( $this, 'flush_output_buffer' ), 0 );
-	}
-	
-	/**
-	 * Inject stubs immediately via inline script in head.
-	 * This runs as early as possible to prevent errors.
-	 */
-	private function inject_stubs_immediately(): void {
-		// Check if we're on a post editor page
-		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) {
-			return;
-		}
-		
-		$post_id = absint( $_GET['post'] );
-		$post = get_post( $post_id );
-		
-		if ( ! $post ) {
-			return;
-		}
-		
-		$settings = new Settings();
-		$enabled_types = $settings->get_enabled_post_types();
-		
-		if ( ! in_array( $post->post_type, $enabled_types, true ) ) {
-			return;
-		}
-		
-		// Output script immediately - this will be in the page before WordPress's inline scripts
-		add_action( 'admin_head', function() {
-			echo '<script>
-			// Initialize WordPress stubs IMMEDIATELY - MUST run before WordPress inline scripts
-			// CRITICAL: This must execute before line 2105 in post.php
-			(function() {
-				"use strict";
-				if (typeof window.wp === "undefined") { window.wp = {}; }
-				
-				// Initialize SVG painter FIRST - this is accessed very early
-				if (typeof window.wp.svgPainter === "undefined") {
-					window.wp.svgPainter = { init: function() {}, interval: null, view: {} };
-				}
-				if (!window.wp.svgPainter.hasOwnProperty("interval") || window.wp.svgPainter.interval === undefined) {
-					window.wp.svgPainter.interval = null;
-				}
-				if (typeof window.wp.svgPainter.view === "undefined") {
-					window.wp.svgPainter.view = {};
-				}
-				
-				// Initialize editor stub
-				if (typeof window.wp.editor === "undefined") {
-					window.wp.editor = { initialize: function() {}, remove: function() {} };
-				}
-				
-				// Initialize media structure - but don\'t override if it\'s already a function
-				// wp_enqueue_media() will set wp.media as a function, so we only set structure if undefined
-				if (typeof window.wp.media === "undefined") {
-					window.wp.media = {};
-				}
-				if (typeof window.wp.media.view === "undefined") {
-					window.wp.media.view = {};
-				}
-				if (typeof window.wp.media.controller === "undefined") {
-					window.wp.media.controller = {};
-				}
-				if (typeof window.wp.media.editor === "undefined") {
-					window.wp.media.editor = { initializeEditor: function() {}, remove: function() {} };
-				}
-			})();
-			</script>';
-		}, -9999 ); // Extremely early priority
 	}
 
 	/**
 	 * Check if builder mode is active.
 	 */
 	public function check_builder_mode(): void {
+		// Check if all three required URL parameters are present
 		if ( ! isset( $_GET['post'] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
 			return;
 		}
 
@@ -130,10 +72,6 @@ class Post_Editor {
 		add_filter( 'user_can_richedit', '__return_false' );
 		add_filter( 'wp_editor_expand', '__return_false' );
 		
-		// Prevent 'post' script from loading - this is critical to prevent errors
-		add_action( 'admin_enqueue_scripts', array( $this, 'prevent_post_script' ), 1 );
-		add_action( 'admin_print_scripts', array( $this, 'prevent_post_script_inline' ), 1 );
-		
 		// Enqueue stub script with highest priority to load before WordPress scripts
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_stub_script' ), 0 );
 
@@ -142,77 +80,7 @@ class Post_Editor {
 		$this->post_id         = $post_id;
 	}
 
-	/**
-	 * Prevent post script from loading.
-	 */
-	public function prevent_post_script(): void {
-		wp_dequeue_script( 'post' );
-		wp_deregister_script( 'post' );
-		wp_dequeue_script( 'editor-expand' );
-		wp_deregister_script( 'editor-expand' );
-	}
 
-	/**
-	 * Enqueue WordPress Media Library scripts early.
-	 * This must run before React app to ensure wp.media is available.
-	 *
-	 * @param string $hook Current admin page hook.
-	 */
-	public function enqueue_media_library( string $hook ): void {
-		if ( 'post.php' !== $hook ) {
-			return;
-		}
-
-		if ( ! isset( $_GET['post'] ) ) {
-			return;
-		}
-
-		$post_id = absint( $_GET['post'] );
-		$post    = get_post( $post_id );
-
-		if ( ! $post ) {
-			return;
-		}
-
-		$enabled_types = Settings::get_enabled_post_types();
-
-		if ( ! in_array( $post->post_type, $enabled_types, true ) ) {
-			return;
-		}
-
-		// Enqueue WordPress Media Library - this sets wp.media as a function
-		// Must be called early to ensure it loads before React app
-		wp_enqueue_media( array( 'post' => $post_id ) );
-		
-		// Explicitly enqueue all media-related scripts to ensure they're loaded
-		// These are dependencies for wp.media to work properly
-		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script( 'jquery-ui-core' );
-		wp_enqueue_script( 'jquery-ui-widget' );
-		wp_enqueue_script( 'jquery-ui-mouse' );
-		wp_enqueue_script( 'jquery-ui-sortable' );
-		wp_enqueue_script( 'jquery-ui-draggable' );
-		wp_enqueue_script( 'jquery-ui-droppable' );
-		wp_enqueue_script( 'jquery-ui-resizable' );
-		wp_enqueue_script( 'jquery-ui-button' );
-		wp_enqueue_script( 'jquery-ui-position' );
-		wp_enqueue_script( 'jquery-ui-dialog' );
-		wp_enqueue_script( 'jquery-ui-tabs' );
-		wp_enqueue_script( 'jquery-ui-tooltip' );
-		wp_enqueue_script( 'wp-util' );
-		wp_enqueue_script( 'wp-backbone' );
-		wp_enqueue_script( 'media-models' );
-		wp_enqueue_script( 'media-views' );
-		wp_enqueue_script( 'media-editor' );
-		wp_enqueue_script( 'media-upload' );
-		wp_enqueue_script( 'media-grid' );
-		wp_enqueue_script( 'media-audiovideo' );
-		
-		// Enqueue media-related styles
-		wp_enqueue_style( 'wp-mediaelement' );
-		wp_enqueue_style( 'media-views' );
-		wp_enqueue_style( 'mediaelementplayer' );
-	}
 
 	/**
 	 * Enqueue builder scripts on post editor.
@@ -224,7 +92,16 @@ class Post_Editor {
 			return;
 		}
 
+		// Check if all three required URL parameters are present
 		if ( ! isset( $_GET['post'] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
 			return;
 		}
 
@@ -244,7 +121,58 @@ class Post_Editor {
 		// Prevent WordPress from loading editor scripts.
 		add_filter( 'user_can_richedit', '__return_false' );
 		add_action( 'admin_head', array( $this, 'hide_default_editor' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'dequeue_editor_scripts' ), 999 );
+		
+		// Enqueue WordPress Media Library with post ID
+		wp_enqueue_media( array( 'post' => $post_id ) );
+		
+		// Ensure wp-backbone is loaded (required for wp.Backbone.View used by media-views)
+		wp_enqueue_script( 'wp-backbone' );
+		
+		add_action( 'admin_footer', function() use ( $post_id ) {
+			global $wp_scripts;
+			
+			if ( ! ( $wp_scripts instanceof \WP_Scripts ) ) {
+				return;
+			}
+			
+			$scripts_to_print = array();
+			
+			// Print dependencies in correct order
+			if ( wp_script_is( 'underscore', 'enqueued' ) && ! wp_script_is( 'underscore', 'done' ) ) {
+				$scripts_to_print[] = 'underscore';
+			}
+			if ( wp_script_is( 'backbone', 'enqueued' ) && ! wp_script_is( 'backbone', 'done' ) ) {
+				$scripts_to_print[] = 'backbone';
+			}
+			if ( wp_script_is( 'wp-backbone', 'enqueued' ) && ! wp_script_is( 'wp-backbone', 'done' ) ) {
+				$scripts_to_print[] = 'wp-backbone';
+			}
+			if ( wp_script_is( 'media-models', 'enqueued' ) && ! wp_script_is( 'media-models', 'done' ) ) {
+				$scripts_to_print[] = 'media-models';
+			}
+			if ( wp_script_is( 'media-views', 'enqueued' ) && ! wp_script_is( 'media-views', 'done' ) ) {
+				$scripts_to_print[] = 'media-views';
+			}
+			if ( wp_script_is( 'media-editor', 'enqueued' ) && ! wp_script_is( 'media-editor', 'done' ) ) {
+				$scripts_to_print[] = 'media-editor';
+			}
+			
+			if ( ! empty( $scripts_to_print ) ) {
+				foreach ( $scripts_to_print as $handle ) {
+					if ( isset( $wp_scripts->registered[ $handle ] ) ) {
+						if ( ! in_array( $handle, $wp_scripts->queue, true ) ) {
+							$wp_scripts->queue[] = $handle;
+						}
+						$wp_scripts->do_item( $handle );
+					}
+				}
+			}
+		}, 999 );
+		
+		// Ensure media modal appears above React app
+		add_action( 'admin_head', function() {
+			echo '<style>.media-modal { z-index: 999999 !important; }</style>';
+		});
 
 		// Enqueue React app.
 		$app_dir = REACTOR_WP_BUILDER_PLUGIN_DIR;
@@ -259,7 +187,7 @@ class Post_Editor {
 			wp_enqueue_script(
 				'reactor-builder-app',
 				$dev_server . '/src/main.jsx',
-				array(),
+				array( 'wp-element', 'jquery' ),
 				REACTOR_WP_BUILDER_VERSION,
 				true
 			);
@@ -279,7 +207,7 @@ class Post_Editor {
 					wp_enqueue_script(
 						'reactor-builder-app',
 						$app_url . 'dist/' . $main_js,
-						array(),
+						array( 'wp-element', 'jquery' ),
 						REACTOR_WP_BUILDER_VERSION,
 						true
 					);
@@ -306,28 +234,13 @@ class Post_Editor {
 						wp_enqueue_script(
 							'reactor-builder-app',
 							$app_url . 'dist/assets/' . $js_file,
-							array(),
+							array( 'wp-element', 'jquery' ),
 							REACTOR_WP_BUILDER_VERSION,
 							true
 						);
 					}
 				}
 			}
-		}
-
-		// Media Library is already enqueued in enqueue_media_library() method
-		// Just ensure media scripts are loaded
-		if ( ! wp_script_is( 'media-views', 'enqueued' ) ) {
-			wp_enqueue_script( 'media-views' );
-		}
-		if ( ! wp_script_is( 'media-editor', 'enqueued' ) ) {
-			wp_enqueue_script( 'media-editor' );
-		}
-		if ( ! wp_script_is( 'media-upload', 'enqueued' ) ) {
-			wp_enqueue_script( 'media-upload' );
-		}
-		if ( ! wp_script_is( 'media-models', 'enqueued' ) ) {
-			wp_enqueue_script( 'media-models' );
 		}
 
 		// Localize script.
@@ -342,68 +255,7 @@ class Post_Editor {
 				'postId'   => $post_id,
 			)
 		);
-	}
-
-	/**
-	 * Dequeue editor scripts that cause conflicts.
-	 * Note: We keep ALL media-related scripts for Media Library functionality.
-	 */
-	public function dequeue_editor_scripts(): void {
-		// Remove editor scripts that expect editor elements, but keep ALL media library scripts.
-		// We need ALL media scripts (media-upload, media-editor, media-views, etc.) for the Media Library to work.
-		wp_dequeue_script( 'svg-painter' );
-		wp_dequeue_script( 'editor' );
-		wp_dequeue_script( 'word-count' );
-		wp_dequeue_script( 'post' );
-		wp_deregister_script( 'svg-painter' );
-		wp_deregister_script( 'editor' );
-		wp_deregister_script( 'word-count' );
-		wp_deregister_script( 'post' );
 		
-		// CRITICAL: Re-enqueue ALL media scripts to ensure Media Library works
-		// These must be present for wp.media to function properly
-		$media_scripts = array(
-			'jquery',
-			'jquery-ui-core',
-			'jquery-ui-widget',
-			'jquery-ui-mouse',
-			'jquery-ui-sortable',
-			'jquery-ui-draggable',
-			'jquery-ui-droppable',
-			'jquery-ui-resizable',
-			'jquery-ui-button',
-			'jquery-ui-position',
-			'jquery-ui-dialog',
-			'jquery-ui-tabs',
-			'jquery-ui-tooltip',
-			'wp-util',
-			'wp-backbone',
-			'media-models',
-			'media-views',
-			'media-editor',
-			'media-upload',
-			'media-grid',
-			'media-audiovideo',
-		);
-		
-		foreach ( $media_scripts as $script ) {
-			if ( ! wp_script_is( $script, 'enqueued' ) ) {
-				wp_enqueue_script( $script );
-			}
-		}
-		
-		// Re-enqueue media styles
-		$media_styles = array(
-			'wp-mediaelement',
-			'media-views',
-			'mediaelementplayer',
-		);
-		
-		foreach ( $media_styles as $style ) {
-			if ( ! wp_style_is( $style, 'enqueued' ) ) {
-				wp_enqueue_style( $style );
-			}
-		}
 	}
 	
 	/**
@@ -419,6 +271,11 @@ class Post_Editor {
 	 * Enqueue stub script with highest priority.
 	 */
 	public function enqueue_stub_script(): void {
+		// Check if all three required URL parameters are present
+		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] || ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
+			return;
+		}
+
 		// Enqueue stub script that loads before WordPress scripts
 		wp_enqueue_script(
 			'reactor-builder-stubs',
@@ -433,8 +290,23 @@ class Post_Editor {
 	 * Hide default editor when in builder mode.
 	 */
 	public function hide_default_editor(): void {
+		// Check if all three required URL parameters are present
+		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] || ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
+			return;
+		}
+
 		?>
 		<style>
+			/* Hide WordPress admin sidebar and topbar */
+			#wpadminbar,
+			#adminmenuback,
+			#adminmenuwrap,
+			#adminmenu,
+			#wpfooter {
+				display: none !important;
+			}
+			
+			/* Hide default editor elements */
 			#postdivrich,
 			#post-body-content,
 			.wp-editor-wrap,
@@ -446,15 +318,39 @@ class Post_Editor {
 			#side-sortables .postbox:not(#reactor-builder-meta) {
 				display: none !important;
 			}
-			#editor {
-				min-height: calc(100vh - 200px);
-				margin: 20px 0;
+			
+			/* Full screen builder */
+			html.wp-toolbar {
+				padding-top: 0 !important;
 			}
-			.wrap {
-				margin: 0;
+			
+			#wpcontent {
+				margin-left: 0 !important;
+				padding: 0 !important;
 			}
+			
+			#wpbody {
+				margin-top: 0 !important;
+			}
+			
 			#wpbody-content {
+				padding: 0 !important;
+				margin: 0 !important;
+			}
+			
+			.wrap {
+				margin: 0 !important;
+				padding: 0 !important;
+			}
+			
+			#editor {
+				min-height: 100vh;
+				margin: 0;
 				padding: 0;
+			}
+			
+			body {
+				overflow-x: hidden;
 			}
 		</style>
 		<?php
@@ -466,6 +362,19 @@ class Post_Editor {
 	 * @param \WP_Post $post Post object.
 	 */
 	public function render_builder_interface( \WP_Post $post ): void {
+		// Check if all three required URL parameters are present
+		if ( ! isset( $_GET['post'] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
+			return;
+		}
+
 		$enabled_types = Settings::get_enabled_post_types();
 
 		if ( ! in_array( $post->post_type, $enabled_types, true ) ) {
@@ -480,176 +389,14 @@ class Post_Editor {
 				← <?php esc_html_e( 'Back to Editor', 'reactor-wp-builder' ); ?>
 			</a>
 		</div>
-		<div id="editor" style="position: relative; z-index: 1;"></div>
-		<?php
-	}
-
-	/**
-	 * Prevent editor JavaScript errors (early in head).
-	 */
-	public function prevent_editor_errors(): void {
-		?>
+		<div id="editor" style="position: relative; z-index: 1; min-height: 400px;"></div>
 		<script>
-		// Initialize stubs BEFORE WordPress scripts load - CRITICAL for preventing errors
+		// Ensure editor div is empty and ready for React
 		(function() {
-			// Create wp object immediately
-			if (typeof window.wp === 'undefined') {
-				window.wp = {};
+			var editor = document.getElementById('editor');
+			if (editor) {
+				editor.innerHTML = '';
 			}
-			
-			// Initialize SVG painter stub FIRST - MUST have interval property
-			// This is accessed very early by WordPress scripts
-			if (typeof window.wp.svgPainter === 'undefined') {
-				window.wp.svgPainter = {
-					init: function() {},
-					interval: null,
-					view: {}
-				};
-			}
-			if (!window.wp.svgPainter.hasOwnProperty('interval') || window.wp.svgPainter.interval === undefined) {
-				window.wp.svgPainter.interval = null;
-			}
-			if (typeof window.wp.svgPainter.view === 'undefined') {
-				window.wp.svgPainter.view = {};
-			}
-			
-			// Initialize editor stub
-			if (typeof window.wp.editor === 'undefined') {
-				window.wp.editor = {
-					initialize: function() {},
-					remove: function() {}
-				};
-			}
-			
-			// Initialize media structure - but DON'T override if it's already a function
-			// wp_enqueue_media() sets wp.media as a function, so we only set structure if undefined
-			if (typeof window.wp.media === 'undefined') {
-				window.wp.media = {};
-			}
-			if (typeof window.wp.media.view === 'undefined') {
-				window.wp.media.view = {};
-			}
-			if (typeof window.wp.media.controller === 'undefined') {
-				window.wp.media.controller = {};
-			}
-			if (typeof window.wp.media.editor === 'undefined') {
-				window.wp.media.editor = {
-					initializeEditor: function() {},
-					remove: function() {}
-				};
-			}
-		})();
-		</script>
-		<?php
-	}
-
-	/**
-	 * Prevent editor errors before scripts print.
-	 */
-	public function prevent_editor_errors_early(): void {
-		?>
-		<script>
-		// Initialize stubs as early as possible - runs in admin_print_scripts with priority 0
-		// This executes before WordPress's inline scripts in post.php
-		(function() {
-			'use strict';
-			// Create wp object if it doesn't exist
-			if (typeof window.wp === 'undefined') {
-				window.wp = {};
-			}
-			
-			// Initialize SVG painter stub FIRST - CRITICAL: must have interval property
-			// WordPress post.php tries to access wp.svgPainter.interval at line 2105
-			if (typeof window.wp.svgPainter === 'undefined') {
-				window.wp.svgPainter = {
-					init: function() {},
-					interval: null,
-					view: {}
-				};
-			}
-			if (!window.wp.svgPainter.hasOwnProperty('interval') || window.wp.svgPainter.interval === undefined) {
-				window.wp.svgPainter.interval = null;
-			}
-			if (typeof window.wp.svgPainter.view === 'undefined') {
-				window.wp.svgPainter.view = {};
-			}
-			
-			// Initialize editor stub
-			if (typeof window.wp.editor === 'undefined') {
-				window.wp.editor = {
-					initialize: function() {},
-					remove: function() {}
-				};
-			}
-			
-			// Initialize media structure - but DON'T override if it's already a function
-			// wp_enqueue_media() sets wp.media as a function, so we only set structure if undefined
-			if (typeof window.wp.media === 'undefined') {
-				window.wp.media = {};
-			}
-			if (typeof window.wp.media.view === 'undefined') {
-				window.wp.media.view = {};
-			}
-			if (typeof window.wp.media.controller === 'undefined') {
-				window.wp.media.controller = {};
-			}
-			if (typeof window.wp.media.editor === 'undefined') {
-				window.wp.media.editor = {
-					initializeEditor: function() {},
-					remove: function() {}
-				};
-			}
-		})();
-		</script>
-		<?php
-	}
-
-	/**
-	 * Prevent editor JavaScript errors (in footer).
-	 */
-	public function prevent_editor_errors_footer(): void {
-		?>
-		<script>
-		(function() {
-			// Ensure stubs are in place
-			if (typeof window.wp !== 'undefined') {
-				if (!window.wp.media) {
-					window.wp.media = {};
-				}
-				if (!window.wp.media.editor) {
-					window.wp.media.editor = {
-						initializeEditor: function() {},
-						remove: function() {}
-					};
-				}
-				if (!window.wp.svgPainter) {
-					window.wp.svgPainter = {
-						init: function() {},
-						interval: null
-					};
-				}
-				if (!window.wp.editor) {
-					window.wp.editor = {
-						initialize: function() {},
-						remove: function() {}
-					};
-				}
-			}
-			
-			// Override any existing media editor initialization
-			jQuery(document).ready(function($) {
-				// Remove any media editor event handlers
-				$(document).off('click', '.insert-media');
-				$(document).off('click', '.add_media');
-				
-				// Prevent editor initialization attempts
-				if (window.wp && window.wp.editor) {
-					var originalInit = window.wp.editor.initialize;
-					window.wp.editor.initialize = function() {
-						// Do nothing
-					};
-				}
-			});
 		})();
 		</script>
 		<?php
@@ -659,8 +406,8 @@ class Post_Editor {
 	 * Start output buffering to inject stubs early.
 	 */
 	public function start_output_buffering(): void {
-		// Only run on post editor pages
-		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) {
+		// Check if all three required URL parameters are present
+		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] || ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
 			return;
 		}
 		
@@ -690,8 +437,8 @@ class Post_Editor {
 	 * Start output buffering early (before any output).
 	 */
 	public function start_output_buffering_early(): void {
-		// Only run on post editor pages
-		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) {
+		// Check if all three required URL parameters are present
+		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] || ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
 			return;
 		}
 		
@@ -709,12 +456,8 @@ class Post_Editor {
 			return;
 		}
 		
-		// Start output buffering if not already active
-		// We check the level to avoid nested buffering issues
-		$current_level = ob_get_level();
-		if ( $current_level === 0 ) {
-			ob_start( array( $this, 'inject_stubs_into_output' ) );
-		}
+		// Don't start output buffering - it prevents media scripts from being printed
+		// We rely on script_loader_tag filter for stub injection instead
 	}
 	
 	/**
@@ -732,16 +475,10 @@ class Post_Editor {
 		}
 		
 		$stub_script = '<script>
-		// Initialize WordPress stubs IMMEDIATELY to prevent errors
-		// This MUST run before any WordPress inline scripts
-		// CRITICAL: This script must execute synchronously before line 2105 in post.php
+		// Initialize WordPress stubs to prevent errors
 		(function() {
 			"use strict";
 			if (typeof window.wp === "undefined") { window.wp = {}; }
-			window.wp.media = window.wp.media || {};
-			window.wp.media.view = window.wp.media.view || {};
-			window.wp.media.controller = window.wp.media.controller || {};
-			window.wp.media.editor = window.wp.media.editor || { initializeEditor: function() {}, remove: function() {} };
 			window.wp.svgPainter = window.wp.svgPainter || { init: function() {}, interval: null, view: {} };
 			if (window.wp.svgPainter.interval === undefined || window.wp.svgPainter.interval === null) { window.wp.svgPainter.interval = null; }
 			window.wp.editor = window.wp.editor || { initialize: function() {}, remove: function() {} };
@@ -772,6 +509,11 @@ class Post_Editor {
 	public function inject_stubs_via_script_tag( string $tag, string $handle ): string {
 		static $injected = false;
 		
+		// Check if all three required URL parameters are present
+		if ( ! isset( $_GET['post'] ) || ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] || ! isset( $_GET['reactor_builder'] ) || '1' !== $_GET['reactor_builder'] ) {
+			return $tag;
+		}
+		
 		// Only inject once, before the first script
 		if ( ! $injected ) {
 			$screen = get_current_screen();
@@ -787,10 +529,6 @@ class Post_Editor {
 						(function() {
 							"use strict";
 							if (typeof window.wp === "undefined") { window.wp = {}; }
-							window.wp.media = window.wp.media || {};
-							window.wp.media.view = window.wp.media.view || {};
-							window.wp.media.controller = window.wp.media.controller || {};
-							window.wp.media.editor = window.wp.media.editor || { initializeEditor: function() {}, remove: function() {} };
 							window.wp.svgPainter = window.wp.svgPainter || { init: function() {}, interval: null, view: {} };
 							if (window.wp.svgPainter.interval === undefined) { window.wp.svgPainter.interval = null; }
 							window.wp.editor = window.wp.editor || { initialize: function() {}, remove: function() {} };
@@ -816,5 +554,6 @@ class Post_Editor {
 			ob_end_flush();
 		}
 	}
+	
 }
 

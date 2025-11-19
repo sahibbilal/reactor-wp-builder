@@ -1,5 +1,6 @@
 // Initialize WordPress stubs immediately to prevent errors
 // This MUST run before any WordPress inline scripts
+// IMPORTANT: Do NOT stub wp.media - let WordPress load it properly
 (function() {
 	'use strict';
 	
@@ -33,27 +34,7 @@
 		};
 	}
 	
-	// Initialize media stubs - but DON'T override wp.media if it's already a function
-	// wp.media should be a function (from wp_enqueue_media), not an object
-	// We only set up the structure if media library hasn't loaded yet
-	if (typeof window.wp.media === 'undefined') {
-		// Create a temporary object structure, but wp_enqueue_media will replace this with a function
-		window.wp.media = {};
-	}
-	
-	// Only add view/controller stubs if they don't exist
-	// These are safe to set as they won't interfere with the real media library
-	if (typeof window.wp.media.view === 'undefined') {
-		window.wp.media.view = {};
-	}
-	if (typeof window.wp.media.controller === 'undefined') {
-		window.wp.media.controller = {};
-	}
-	if (typeof window.wp.media.editor === 'undefined') {
-		window.wp.media.editor = {
-			initializeEditor: function() {},
-			remove: function() {}
-		};
-	}
+	// DO NOT stub wp.media - it must be loaded by WordPress media scripts
+	// Stubbing it would prevent the real wp.media from being initialized
 })();
 

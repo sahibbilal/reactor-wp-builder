@@ -280,6 +280,25 @@ class Post_Meta {
 			case 'image':
 				$src = ! empty( $props['src'] ) ? esc_url( $props['src'] ) : '';
 				$alt = ! empty( $props['alt'] ) ? esc_attr( $props['alt'] ) : '';
+				$image_size = ! empty( $props['imageSize'] ) ? $props['imageSize'] : 'medium';
+				$sizes = ! empty( $props['sizes'] ) && is_array( $props['sizes'] ) ? $props['sizes'] : array();
+				
+				// Use the selected image size if available
+				if ( ! empty( $sizes ) && ! empty( $image_size ) ) {
+					if ( $image_size === 'full' ) {
+						// Use original full size URL
+						$src = ! empty( $props['src'] ) ? esc_url( $props['src'] ) : '';
+					} elseif ( ! empty( $sizes[ $image_size ] ) && ! empty( $sizes[ $image_size ]['url'] ) ) {
+						$src = esc_url( $sizes[ $image_size ]['url'] );
+					} elseif ( ! empty( $sizes['medium'] ) && ! empty( $sizes['medium']['url'] ) ) {
+						// Fallback to medium
+						$src = esc_url( $sizes['medium']['url'] );
+					} elseif ( ! empty( $sizes['thumbnail'] ) && ! empty( $sizes['thumbnail']['url'] ) ) {
+						// Fallback to thumbnail
+						$src = esc_url( $sizes['thumbnail']['url'] );
+					}
+				}
+				
 				if ( $src ) {
 					echo '<img src="' . $src . '" alt="' . $alt . '"' . $class_attr . $style_attr . ' />';
 				}
@@ -294,6 +313,54 @@ class Post_Meta {
 				
 			case 'divider':
 				echo '<hr' . $class_attr . $style_attr . ' />';
+				break;
+				
+			case 'gallery':
+				$images = ! empty( $props['images'] ) && is_array( $props['images'] ) ? $props['images'] : array();
+				$columns = ! empty( $props['columns'] ) ? absint( $props['columns'] ) : 3;
+				$gap = ! empty( $props['gap'] ) ? esc_attr( $props['gap'] ) : '10px';
+				$image_size = ! empty( $props['imageSize'] ) ? $props['imageSize'] : 'medium';
+				
+				$gallery_styles = $styles;
+				$gallery_styles[] = 'display: grid';
+				$gallery_styles[] = 'grid-template-columns: repeat(' . $columns . ', 1fr)';
+				$gallery_styles[] = 'gap: ' . $gap;
+				$gallery_style_attr = ! empty( $gallery_styles ) ? ' style="' . implode( '; ', $gallery_styles ) . '"' : '';
+				
+				if ( ! empty( $images ) && count( $images ) > 0 ) {
+					echo '<div' . $class_attr . $gallery_style_attr . '>';
+					foreach ( $images as $image ) {
+						if ( ! is_array( $image ) ) {
+							continue;
+						}
+						
+						$image_src = ! empty( $image['url'] ) ? esc_url( $image['url'] ) : ( ! empty( $image['src'] ) ? esc_url( $image['src'] ) : '' );
+						$image_alt = ! empty( $image['alt'] ) ? esc_attr( $image['alt'] ) : ( ! empty( $image['title'] ) ? esc_attr( $image['title'] ) : '' );
+						
+						// Use the selected image size if available
+						if ( ! empty( $image['sizes'] ) && is_array( $image['sizes'] ) && ! empty( $image_size ) ) {
+							if ( $image_size === 'full' ) {
+								// Use original full size URL
+								$image_src = ! empty( $image['url'] ) ? esc_url( $image['url'] ) : ( ! empty( $image['src'] ) ? esc_url( $image['src'] ) : '' );
+							} elseif ( ! empty( $image['sizes'][ $image_size ] ) && ! empty( $image['sizes'][ $image_size ]['url'] ) ) {
+								$image_src = esc_url( $image['sizes'][ $image_size ]['url'] );
+							} elseif ( ! empty( $image['sizes']['medium'] ) && ! empty( $image['sizes']['medium']['url'] ) ) {
+								// Fallback to medium
+								$image_src = esc_url( $image['sizes']['medium']['url'] );
+							} elseif ( ! empty( $image['sizes']['thumbnail'] ) && ! empty( $image['sizes']['thumbnail']['url'] ) ) {
+								// Fallback to thumbnail
+								$image_src = esc_url( $image['sizes']['thumbnail']['url'] );
+							}
+						}
+						
+						if ( $image_src ) {
+							echo '<div class="reactor-gallery-item" style="position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 4px;">';
+							echo '<img src="' . $image_src . '" alt="' . $image_alt . '" style="width: 100%; height: 100%; object-fit: cover; display: block;" loading="lazy" />';
+							echo '</div>';
+						}
+					}
+					echo '</div>';
+				}
 				break;
 				
 			case 'container':

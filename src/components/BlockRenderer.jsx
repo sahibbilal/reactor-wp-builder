@@ -28,15 +28,12 @@ function BlockRenderer({
       const didDrop = monitor.didDrop();
       
       if (isOverCurrent && !didDrop) {
-        // Check if block can accept this type
+        // Check if block can accept this type - STRICT validation
         if (canAcceptBlock(block.type, item.type)) {
           onAddBlock(item.type, block.id);
           return; // Explicitly return to indicate we handled the drop
-        } else if (block.type === 'column' && ['heading', 'text', 'image', 'button', 'divider', 'container'].includes(item.type)) {
-          // Allow content blocks to be dropped directly on columns
-          onAddBlock(item.type, block.id);
-          return; // Explicitly return to indicate we handled the drop
         }
+        // Do NOT allow any other drops - this prevents invalid block combinations
       }
     },
     collect: (monitor) => ({
@@ -48,9 +45,8 @@ function BlockRenderer({
       if (!canHaveChildren) {
         return false;
       }
-      // Allow dropping if block can accept this type, or if it's a column and item is a content block
-      return canAcceptBlock(block.type, item.type) || 
-             (block.type === 'column' && ['heading', 'text', 'image', 'button', 'divider', 'container'].includes(item.type));
+      // STRICT validation: Only allow drops if the block can accept this type
+      return canAcceptBlock(block.type, item.type);
     },
   });
 
@@ -99,6 +95,7 @@ function BlockRenderer({
       heading: 'Heading',
       text: 'Text',
       image: 'Image',
+      gallery: 'Gallery',
       button: 'Button',
       divider: 'Divider',
     };
@@ -120,7 +117,8 @@ function BlockRenderer({
   return (
     <div
       ref={canHaveChildren ? drop : null}
-      className={`reactor-block-wrapper ${isSelected ? 'selected' : ''} ${isOver && canDrop && canHaveChildren ? 'drag-over' : ''} ${canHaveChildren ? 'has-children' : ''} ${block.type === 'column' ? 'reactor-column-wrapper' : ''}`}
+      className={`reactor-block-wrapper reactor-block-${block.type} ${isSelected ? 'selected' : ''} ${isOver && canDrop && canHaveChildren ? 'drag-over' : ''} ${canHaveChildren ? 'has-children' : ''} ${block.type === 'column' ? 'reactor-column-wrapper' : ''}`}
+      data-block-id={block.id}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -155,20 +153,21 @@ function BlockRenderer({
         </div>
       )}
 
-      {/* Inline add button - shows on hover for parent blocks ONLY if they can have children */}
-      {/* Content blocks (text, heading, image, button, divider) should NOT show this */}
-      {canHaveChildren && (isHovered || isEmpty) && (
-        <div className="reactor-block-add-button">
-          <InlineAddButton
-            parentType={block.type}
-            onAddBlock={(blockType) => onAddBlock(blockType, block.id)}
-            isEmpty={isEmpty}
-          />
-        </div>
+      {/* Inject custom CSS and responsive styles */}
+      {(block.props?.customCSS || block.props?.mobileCSS || block.props?.tabletCSS || block.props?.desktopCSS) && (
+        <style dangerouslySetInnerHTML={{
+          __html: [
+            block.props?.customCSS ? `.reactor-block-wrapper[data-block-id="${block.id}"] { ${block.props.customCSS} }` : '',
+            block.props?.mobileCSS ? `@media (max-width: 768px) { .reactor-block-wrapper[data-block-id="${block.id}"] { ${block.props.mobileCSS} } }` : '',
+            block.props?.tabletCSS ? `@media (max-width: 1024px) { .reactor-block-wrapper[data-block-id="${block.id}"] { ${block.props.tabletCSS} } }` : '',
+            block.props?.desktopCSS ? `@media (min-width: 1025px) { .reactor-block-wrapper[data-block-id="${block.id}"] { ${block.props.desktopCSS} } }` : ''
+          ].filter(Boolean).join('\n')
+        }} />
       )}
-
+      
       <div className="reactor-block-content">
         <Component
+          key={block.id}
           {...block.props}
           children={block.children}
           selected={isSelected}
@@ -180,18 +179,44 @@ function BlockRenderer({
               <span>Drop here to add {getBlockLabel(block.type === 'section' ? 'row' : block.type === 'row' ? 'column' : 'block')}</span>
             </div>
           )}
-          {block.children && block.children.map((child) => (
-            <BlockRenderer
-              key={child.id}
-              block={child}
-              selectedBlock={selectedBlock}
-              onSelectBlock={onSelectBlock}
-              onAddBlock={onAddBlock}
-              onDeleteBlock={onDeleteBlock}
-              onUpdateBlock={onUpdateBlock}
-              depth={depth + 1}
-            />
+          {block.children && block.children.map((child, index) => (
+            <React.Fragment key={child.id}>
+              {/* Insert indicator before each child */}
+              {canHaveChildren && (
+                <div className="reactor-block-insert-indicator">
+                  <InlineAddButton
+                    parentType={block.type}
+                    onAddBlock={(blockType) => onAddBlock(blockType, block.id, index)}
+                    isEmpty={false}
+                    compact={true}
+                  />
+                </div>
+              )}
+              <BlockRenderer
+                block={child}
+                selectedBlock={selectedBlock}
+                onSelectBlock={onSelectBlock}
+                onAddBlock={onAddBlock}
+                onDeleteBlock={onDeleteBlock}
+                onUpdateBlock={onUpdateBlock}
+                depth={depth + 1}
+              />
+            </React.Fragment>
           ))}
+          {/* Inline add button - shows at bottom after children for parent blocks ONLY */}
+          {/* Content blocks (text, heading, image, button, divider) should NOT show this */}
+          {canHaveChildren && (
+            <div className="reactor-block-add-button">
+              <InlineAddButton
+                parentType={block.type}
+                onAddBlock={(blockType) => {
+                  const position = block.children ? block.children.length : 0;
+                  onAddBlock(blockType, block.id, position);
+                }}
+                isEmpty={isEmpty}
+              />
+            </div>
+          )}
         </Component>
       </div>
     </div>
@@ -202,8 +227,8 @@ function canAcceptBlock(parentType, childType) {
   const rules = {
     section: ['row'],
     row: ['column'],
-    column: ['container', 'heading', 'text', 'image', 'button', 'divider'],
-    container: ['heading', 'text', 'image', 'button', 'divider'],
+    column: ['container', 'heading', 'text', 'image', 'gallery', 'button', 'divider'],
+    container: ['heading', 'text', 'image', 'gallery', 'button', 'divider'],
   };
   return rules[parentType]?.includes(childType) || false;
 }

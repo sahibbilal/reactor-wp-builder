@@ -7,6 +7,7 @@ import Text from './Text';
 import Image from './Image';
 import Button from './Button';
 import Divider from './Divider';
+import Gallery from './Gallery';
 
 export default {
   section: Section,
@@ -18,5 +19,6 @@ export default {
   image: Image,
   button: Button,
   divider: Divider,
+  gallery: Gallery,
 };
 

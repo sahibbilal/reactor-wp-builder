@@ -9,6 +9,7 @@ const BLOCK_TYPES = [
   { type: 'heading', label: 'Heading', icon: 'H' },
   { type: 'text', label: 'Text', icon: 'T' },
   { type: 'image', label: 'Image', icon: '🖼️' },
+  { type: 'gallery', label: 'Gallery', icon: '🖼️🖼️' },
   { type: 'button', label: 'Button', icon: '🔘' },
   { type: 'divider', label: 'Divider', icon: '➖' },
 ];

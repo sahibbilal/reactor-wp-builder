@@ -30,58 +30,6 @@ class Rest_Api {
 	 * Register REST API routes.
 	 */
 	public function register_routes(): void {
-		// Templates endpoints.
-		register_rest_route(
-			self::NAMESPACE,
-			'/templates',
-			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_templates' ),
-				'permission_callback' => array( $this, 'check_permissions' ),
-			)
-		);
-
-		register_rest_route(
-			self::NAMESPACE,
-			'/templates',
-			array(
-				'methods'             => \WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'save_template' ),
-				'permission_callback' => array( $this, 'check_permissions' ),
-			)
-		);
-
-		register_rest_route(
-			self::NAMESPACE,
-			'/templates/(?P<id>[a-zA-Z0-9_-]+)',
-			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_template' ),
-				'permission_callback' => array( $this, 'check_permissions' ),
-				'args'                => array(
-					'id' => array(
-						'required' => true,
-						'type'     => 'string',
-					),
-				),
-			)
-		);
-
-		register_rest_route(
-			self::NAMESPACE,
-			'/templates/(?P<id>[a-zA-Z0-9_-]+)',
-			array(
-				'methods'             => \WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'delete_template' ),
-				'permission_callback' => array( $this, 'check_permissions' ),
-				'args'                => array(
-					'id' => array(
-						'required' => true,
-						'type'     => 'string',
-					),
-				),
-			)
-		);
 		// Get layout endpoint.
 		register_rest_route(
 			self::NAMESPACE,
@@ -173,8 +121,8 @@ class Rest_Api {
 			}
 		}
 		
-		// For template endpoints, require manage_options
-		return current_user_can( 'manage_options' );
+		// Default: require edit_posts capability
+		return current_user_can( 'edit_posts' );
 	}
 
 	/**
@@ -315,117 +263,6 @@ class Rest_Api {
 			array(
 				'success' => true,
 				'post_id' => $post_id,
-			),
-			200
-		);
-	}
-
-	/**
-	 * Get templates callback.
-	 *
-	 * @param \WP_REST_Request $request Request object.
-	 * @return \WP_REST_Response
-	 */
-	public function get_templates( \WP_REST_Request $request ) {
-		$templates = \Reactor\WP\Builder\Includes\Templates::get_all();
-		return new \WP_REST_Response(
-			array(
-				'templates' => array_values( $templates ),
-			),
-			200
-		);
-	}
-
-	/**
-	 * Get template callback.
-	 *
-	 * @param \WP_REST_Request $request Request object.
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function get_template( \WP_REST_Request $request ) {
-		$template_id = $request->get_param( 'id' );
-		$template    = \Reactor\WP\Builder\Includes\Templates::get( $template_id );
-
-		if ( ! $template ) {
-			return new \WP_Error(
-				'template_not_found',
-				__( 'Template not found.', 'reactor-wp-builder' ),
-				array( 'status' => 404 )
-			);
-		}
-
-		return new \WP_REST_Response( $template, 200 );
-	}
-
-	/**
-	 * Save template callback.
-	 *
-	 * @param \WP_REST_Request $request Request object.
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function save_template( \WP_REST_Request $request ) {
-		$params = $request->get_json_params();
-		$name   = $params['name'] ?? '';
-		$layout = $params['layout'] ?? array();
-
-		if ( empty( $name ) ) {
-			return new \WP_Error(
-				'invalid_name',
-				__( 'Template name is required.', 'reactor-wp-builder' ),
-				array( 'status' => 400 )
-			);
-		}
-
-		if ( empty( $layout ) || ! isset( $layout['sections'] ) ) {
-			return new \WP_Error(
-				'invalid_layout',
-				__( 'Invalid layout structure.', 'reactor-wp-builder' ),
-				array( 'status' => 400 )
-			);
-		}
-
-		$template_id = sanitize_title( $name ) . '-' . time();
-		$saved        = \Reactor\WP\Builder\Includes\Templates::save( $template_id, $name, $layout );
-
-		if ( ! $saved ) {
-			return new \WP_Error(
-				'save_failed',
-				__( 'Failed to save template.', 'reactor-wp-builder' ),
-				array( 'status' => 500 )
-			);
-		}
-
-		return new \WP_REST_Response(
-			array(
-				'success'     => true,
-				'template_id' => $template_id,
-				'template'    => \Reactor\WP\Builder\Includes\Templates::get( $template_id ),
-			),
-			200
-		);
-	}
-
-	/**
-	 * Delete template callback.
-	 *
-	 * @param \WP_REST_Request $request Request object.
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function delete_template( \WP_REST_Request $request ) {
-		$template_id = $request->get_param( 'id' );
-		$deleted     = \Reactor\WP\Builder\Includes\Templates::delete( $template_id );
-
-		if ( ! $deleted ) {
-			return new \WP_Error(
-				'delete_failed',
-				__( 'Failed to delete template.', 'reactor-wp-builder' ),
-				array( 'status' => 500 )
-			);
-		}
-
-		return new \WP_REST_Response(
-			array(
-				'success' => true,
 			),
 			200
 		);

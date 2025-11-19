@@ -8,8 +8,22 @@ function Section({
   borderWidth,
   borderRadius,
   borderColor,
+  borderStyle,
+  backgroundImage,
+  backgroundSize,
+  backgroundPosition,
+  backgroundRepeat,
+  width,
+  height,
+  minWidth,
+  maxWidth,
+  opacity,
+  boxShadow,
+  transform,
+  transition,
   className, 
   customCSS, 
+  id,
   selected 
 }) {
   const style = {
@@ -17,13 +31,28 @@ function Section({
     backgroundColor: backgroundColor || '#ffffff',
     margin: margin || '0',
     minHeight: '50px',
-    ...(borderWidth ? { borderWidth, borderStyle: 'solid' } : {}),
+    width: width || '100%',
+    maxWidth: maxWidth || '100%',
+    ...(height ? { height } : {}),
+    ...(minWidth ? { minWidth } : {}),
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    ...(borderWidth ? { borderWidth, borderStyle: borderStyle || 'solid' } : {}),
     ...(borderRadius ? { borderRadius } : {}),
     ...(borderColor ? { borderColor } : {}),
+    ...(backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}),
+    ...(backgroundSize ? { backgroundSize } : {}),
+    ...(backgroundPosition ? { backgroundPosition } : {}),
+    ...(backgroundRepeat ? { backgroundRepeat } : {}),
+    ...(opacity !== undefined ? { opacity } : {}),
+    ...(boxShadow ? { boxShadow } : {}),
+    ...(transform ? { transform } : {}),
+    ...(transition ? { transition } : {}),
   };
 
   return (
     <section
+      id={id || undefined}
       className={`reactor-section ${className || ''} ${selected ? 'selected' : ''}`}
       style={style}
     >

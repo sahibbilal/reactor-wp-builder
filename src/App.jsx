@@ -5,7 +5,6 @@ import Toolbar from './components/Toolbar';
 import BlockPanel from './components/BlockPanel';
 import Canvas from './components/Canvas';
 import SettingsPanel from './components/SettingsPanel';
-import TemplatesPanel from './components/TemplatesPanel';
 import { useBuilderState } from './hooks/useBuilderState';
 import { saveLayout, loadLayout } from './utils/api';
 import './styles/App.css';
@@ -221,13 +220,6 @@ function App() {
         
         <div className="reactor-builder-content">
           <div className="reactor-builder-sidebar-left">
-            <TemplatesPanel
-              onLoadTemplate={(templateLayout) => {
-                updateLayout(templateLayout);
-              }}
-              onSaveTemplate={handleSave}
-              currentLayout={layout}
-            />
             <BlockPanel onAddBlock={addBlock} />
           </div>
           

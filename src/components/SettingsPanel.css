@@ -58,11 +58,15 @@
 
 .reactor-setting-field {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .reactor-setting-field label {
+  margin: 0;
+  min-width: 100px;
   font-size: 13px;
   font-weight: 600;
   color: #1d2327;
@@ -94,13 +98,28 @@
 .reactor-setting-field textarea {
   resize: vertical;
   min-height: 80px;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Special case: textarea fields should stack label above for better UX */
+.reactor-setting-field.reactor-textarea-field {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.reactor-setting-field.reactor-textarea-field label {
+  min-width: auto;
+  margin-bottom: 6px;
 }
 
 .reactor-setting-field input[type="color"] {
-  width: 100%;
-  height: 40px;
+  height: 36px;
+  width: 80px;
   padding: 2px;
   cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 .reactor-setting-group {
@@ -121,5 +140,48 @@
   color: #1d2327;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Number Input with Unit Selector */
+.reactor-number-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.reactor-number-input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2327;
+}
+
+/* Four Direction Input */
+.reactor-four-direction-input {
+  margin-bottom: 16px;
+}
+
+.reactor-four-direction-input label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2327;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Icon Buttons */
+.reactor-icon-button {
+  transition: all 0.2s ease;
+}
+
+.reactor-icon-button:hover {
+  border-color: #2271b1 !important;
+  background: #f0f6fc !important;
+  color: #2271b1 !important;
+}
+
+.reactor-icon-button.active:hover {
+  background: #135e96 !important;
+  border-color: #135e96 !important;
 }
 

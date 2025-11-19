@@ -3,6 +3,15 @@
   margin: 4px 0;
   min-height: 30px;
   transition: all 0.2s ease;
+  border: 1px solid #d0d0d1;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Column wrapper - inherits width from column props */
@@ -12,6 +21,8 @@
   flex-shrink: 0;
   flex-grow: 0;
   max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .reactor-block-wrapper.has-children {
@@ -32,8 +43,10 @@
   border-radius: 4px;
   z-index: 5;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  display: block;
+  visibility: visible;
 }
 
 /* Row selection area - allows clicking on row even when columns are present */
@@ -59,27 +72,46 @@
 }
 
 .reactor-block-add-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 4px 0;
   z-index: 6;
   pointer-events: none;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .reactor-block-add-button * {
   pointer-events: all;
 }
 
+.reactor-block-insert-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s;
+  height: 20px;
+}
+
+.reactor-block-content:hover .reactor-block-insert-indicator {
+  opacity: 1;
+}
+
 .reactor-block-wrapper.selected {
-  outline: 2px solid #2271b1;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
+  border: 3px solid #2271b1;
+  box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2), 0 2px 8px rgba(34, 113, 177, 0.15);
+  background: #f6f9fc;
 }
 
 .reactor-block-wrapper.drag-over {
-  outline: 2px dashed #2271b1;
-  outline-offset: 2px;
+  border: 2px dashed #2271b1 !important;
   background: rgba(34, 113, 177, 0.08);
   border-radius: 4px;
   position: relative;
@@ -145,6 +177,120 @@
 .reactor-block-content {
   position: relative;
   min-height: 40px;
+  padding: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure child blocks are contained within parent and take full width */
+.reactor-block-content > .reactor-block-wrapper {
+  width: 100%;
+  max-width: 100%;
+  margin: 4px 0;
+  box-sizing: border-box;
+}
+
+/* Ensure all nested elements respect parent boundaries */
+.reactor-block-wrapper * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure section, row, column, container elements respect parent width */
+.reactor-section,
+.reactor-row,
+.reactor-column,
+.reactor-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Section blocks should have more prominent borders */
+.reactor-block-section {
+  border: 2px solid #8c8f94;
+  padding: 8px;
+  margin: 12px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reactor-block-section.selected {
+  border: 3px solid #2271b1;
+}
+
+/* Row blocks */
+.reactor-block-row {
+  border: 2px solid #a7aaad;
+  padding: 6px;
+  margin: 8px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reactor-block-row.selected {
+  border: 3px solid #2271b1;
+}
+
+/* Column blocks */
+.reactor-block-column {
+  border: 1px solid #c3c4c7;
+  padding: 4px;
+  margin: 6px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reactor-block-column.selected {
+  border: 3px solid #2271b1;
+}
+
+/* Container blocks */
+.reactor-block-container {
+  border: 1px solid #d0d0d1;
+  padding: 4px;
+  margin: 6px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reactor-block-container.selected {
+  border: 3px solid #2271b1;
+}
+
+/* Content blocks (heading, text, image, button, divider) */
+.reactor-block-heading,
+.reactor-block-text,
+.reactor-block-image,
+.reactor-block-button,
+.reactor-block-divider {
+  border: 1px solid #d0d0d1;
+  padding: 4px;
+  margin: 4px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reactor-block-heading.selected,
+.reactor-block-text.selected,
+.reactor-block-image.selected,
+.reactor-block-button.selected,
+.reactor-block-divider.selected {
+  border: 3px solid #2271b1;
 }
 
 .reactor-block-drop-indicator {

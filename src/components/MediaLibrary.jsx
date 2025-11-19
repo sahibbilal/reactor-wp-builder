@@ -1,124 +1,67 @@
-import { useEffect, useRef } from 'react';
+import React from 'react';
 
 /**
- * Hook to open WordPress Media Library
+ * Component for Media Library button
+ * Uses WordPress's default wp.media functionality
+ * Implementation based on reactor-builder-starter
  */
-export function useMediaLibrary({ onSelect }) {
-  const mediaFrameRef = useRef(null);
-
-  useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      if (mediaFrameRef.current) {
-        mediaFrameRef.current.detach();
-      }
-    };
-  }, []);
-
-  const openMediaLibrary = () => {
-    // Check if wp.media is available - wait for it to load
-    const checkMediaLibrary = () => {
-      // Check if wp object exists
-      if (typeof window.wp === 'undefined') {
-        return false;
-      }
-      
-      // Check if wp.media exists and is a function
-      if (typeof window.wp.media !== 'function') {
-        return false;
-      }
-      
-      // Check if media views are loaded
-      if (typeof window.wp.media.view === 'undefined' || typeof window.wp.media.view.MediaFrame === 'undefined') {
-        return false;
-      }
-      
-      return true;
-    };
+export function MediaLibraryButton({ onSelect, currentImageId, children, multiple = false }) {
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    if (!checkMediaLibrary()) {
-      // Try to wait for scripts to load
-      let retries = 0;
-      const maxRetries = 10; // Increased retries
-      
-      const checkAndOpen = () => {
-        if (checkMediaLibrary()) {
-          // Media library is now available, proceed
-          createAndOpenMediaFrame();
-        } else if (retries < maxRetries) {
-          retries++;
-          setTimeout(checkAndOpen, 300); // Reduced delay for faster response
+    // Simple implementation like reactor-builder-starter
+    const frame = wp.media({
+      title: multiple ? 'Select or Upload Images' : 'Select or Upload Image',
+      button: {
+        text: multiple ? 'Use selected images' : 'Use this image',
+      },
+      library: {
+        type: 'image',
+      },
+      multiple: multiple,
+    });
+
+    // Handle image selection
+    frame.on('select', () => {
+      const selection = frame.state().get('selection');
+      if (selection && selection.length > 0) {
+        if (multiple) {
+          // Handle multiple images
+          const selectedImages = selection.map(attachment => {
+            const att = attachment.toJSON();
+            return {
+              id: att.id,
+              url: att.url,
+              alt: att.alt || att.title || '',
+              title: att.title || '',
+              width: att.width,
+              height: att.height,
+              sizes: att.sizes,
+            };
+          });
+          if (onSelect && typeof onSelect === 'function') {
+            onSelect(selectedImages);
+          }
         } else {
-          console.error('Media Library not available. wp object:', typeof window.wp, 'wp.media:', typeof window.wp?.media);
-          alert('WordPress Media Library is not available. Please refresh the page and try again.\n\nIf the problem persists, check the browser console for errors.');
-        }
-      };
-      
-      checkAndOpen();
-      return;
-    }
-
-    createAndOpenMediaFrame();
-  };
-
-  const createAndOpenMediaFrame = () => {
-    // Create or reuse media frame
-    if (!mediaFrameRef.current) {
-      try {
-        mediaFrameRef.current = window.wp.media({
-          title: 'Select or Upload Image',
-          button: {
-            text: 'Use this image',
-          },
-          multiple: false,
-          library: {
-            type: 'image',
-          },
-        });
-
-        // Handle image selection
-        mediaFrameRef.current.on('select', () => {
-          const attachment = mediaFrameRef.current.state().get('selection').first().toJSON();
-          
-          if (onSelect) {
+          // Handle single image
+          const attachment = selection.first().toJSON();
+          if (onSelect && typeof onSelect === 'function') {
             onSelect({
               id: attachment.id,
               url: attachment.url,
               alt: attachment.alt || attachment.title || '',
+              title: attachment.title || '',
               width: attachment.width,
               height: attachment.height,
               sizes: attachment.sizes,
             });
           }
-        });
-      } catch (error) {
-        console.error('Error creating media frame:', error);
-        alert('Error opening Media Library. Please refresh the page and try again.');
-        return;
+        }
       }
-    }
+    });
 
-    // Open the media library
-    try {
-      mediaFrameRef.current.open();
-    } catch (error) {
-      console.error('Error opening media frame:', error);
-      alert('Error opening Media Library. Please refresh the page and try again.');
-    }
-  };
-
-  return { openMediaLibrary };
-}
-
-/**
- * Component for Media Library button
- */
-export function MediaLibraryButton({ onSelect, currentImageId, children }) {
-  const { openMediaLibrary } = useMediaLibrary({ onSelect });
-
-  const handleClick = (e) => {
-    e.preventDefault();
-    openMediaLibrary();
+    frame.open();
   };
 
   return (
@@ -133,4 +76,3 @@ export function MediaLibraryButton({ onSelect, currentImageId, children }) {
 }
 
 export default MediaLibraryButton;
-
