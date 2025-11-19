@@ -32,6 +32,65 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Handle preview - open post in new tab
+  const handlePreview = useCallback(async () => {
+    if (!window.reactorBuilder) return;
+    
+    const postId = window.reactorBuilder.postId || new URLSearchParams(window.location.search).get('post_id');
+    
+    if (!postId) {
+      alert('No post ID found. Please save the post first.');
+      return;
+    }
+    
+    // Get the post permalink from WordPress REST API
+    const restUrl = window.reactorBuilder.root || window.location.origin + '/wp-json/';
+    
+    try {
+      // First, try to get post type and then the permalink
+      // We'll try common post types: posts, pages, and custom post types
+      const postTypes = ['posts', 'pages'];
+      
+      let postUrl = null;
+      
+      // Try to get permalink from REST API
+      for (const postType of postTypes) {
+        try {
+          const response = await fetch(`${restUrl}wp/v2/${postType}/${postId}?_fields=link,type`, {
+            headers: {
+              'X-WP-Nonce': window.reactorBuilder.nonce,
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.link) {
+              postUrl = data.link;
+              break;
+            }
+          }
+        } catch (e) {
+          // Continue to next post type
+          continue;
+        }
+      }
+      
+      // If we found a permalink, use it
+      if (postUrl) {
+        window.open(postUrl, '_blank');
+      } else {
+        // Fallback: construct URL manually using post ID
+        const fallbackUrl = `${window.location.origin}/?p=${postId}`;
+        window.open(fallbackUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error getting post permalink:', error);
+      // Fallback: construct URL manually
+      const fallbackUrl = `${window.location.origin}/?p=${postId}`;
+      window.open(fallbackUrl, '_blank');
+    }
+  }, []);
+
   // Load layout on mount
   useEffect(() => {
     const loadInitialLayout = async () => {
@@ -55,6 +114,42 @@ function App() {
 
     loadInitialLayout();
   }, []);
+
+  // Handle keyboard shortcuts (Delete/Backspace to delete selected block)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only handle Delete/Backspace if a block is selected
+      if (!selectedBlock) {
+        return;
+      }
+
+      // Don't delete if user is typing in an input, textarea, or contenteditable
+      const target = e.target;
+      const isInput = target.tagName === 'INPUT' || 
+                      target.tagName === 'TEXTAREA' || 
+                      target.isContentEditable ||
+                      target.closest('input, textarea, [contenteditable="true"]');
+      
+      if (isInput) {
+        return;
+      }
+
+      // Handle Delete or Backspace key
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (window.confirm('Are you sure you want to delete this block?')) {
+          deleteBlock(selectedBlock);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedBlock, deleteBlock]);
 
   // Save layout handler
   const handleSave = useCallback(async () => {
@@ -117,7 +212,7 @@ function App() {
           onRedo={redo}
           canUndo={historyIndex > 0}
           canRedo={historyIndex < history.length - 1}
-          onPreview={setPreviewMode}
+          onPreview={handlePreview}
           previewMode={previewMode}
           deviceMode={deviceMode}
           onDeviceModeChange={setDeviceMode}
@@ -210,6 +305,7 @@ function App() {
           <SettingsPanel
             selectedBlock={selectedBlock ? findBlockById(layout, selectedBlock) : null}
             onUpdateBlock={updateBlock}
+            layout={layout}
           />
         </div>
       </div>

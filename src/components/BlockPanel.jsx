@@ -5,7 +5,6 @@ import './BlockPanel.css';
 const BLOCK_TYPES = [
   { type: 'section', label: 'Section', icon: '📄' },
   { type: 'row', label: 'Row', icon: '↔️' },
-  { type: 'column', label: 'Column', icon: '↕️' },
   { type: 'container', label: 'Container', icon: '📦' },
   { type: 'heading', label: 'Heading', icon: 'H' },
   { type: 'text', label: 'Text', icon: 'T' },
@@ -43,15 +42,19 @@ function BlockPanel({ onAddBlock }) {
       <div className="reactor-block-panel-content">
         <div className="reactor-block-group">
           <div className="reactor-block-group-title">Layout</div>
-          {BLOCK_TYPES.filter(b => ['section', 'row', 'column', 'container'].includes(b.type)).map(block => (
-            <BlockItem key={block.type} {...block} />
-          ))}
+          <div className="reactor-block-grid">
+            {BLOCK_TYPES.filter(b => ['section', 'row', 'container'].includes(b.type)).map(block => (
+              <BlockItem key={block.type} {...block} />
+            ))}
+          </div>
         </div>
         <div className="reactor-block-group">
           <div className="reactor-block-group-title">Content</div>
-          {BLOCK_TYPES.filter(b => !['section', 'row', 'column', 'container'].includes(b.type)).map(block => (
-            <BlockItem key={block.type} {...block} />
-          ))}
+          <div className="reactor-block-grid">
+            {BLOCK_TYPES.filter(b => !['section', 'row', 'container'].includes(b.type)).map(block => (
+              <BlockItem key={block.type} {...block} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

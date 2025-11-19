@@ -17,17 +17,24 @@ function Canvas({
   const [{ isOver }, drop] = useDrop({
     accept: 'block',
     drop: (item, monitor) => {
+      // Only handle drop if it wasn't already handled by a child element
+      // This prevents canvas from handling drops that should go to blocks
       if (!monitor.didDrop()) {
-        // If it's a layout block (section, row, column, container), add directly to root
-        if (['section', 'row', 'column', 'container'].includes(item.type)) {
-          onAddBlock(item.type);
-        } else {
-          // For content blocks on empty canvas, use the structure helper
-          if (onAddBlockWithStructure) {
-            onAddBlockWithStructure(item.type);
+        const isOverCurrent = monitor.isOver({ shallow: true });
+        
+        // Only handle if we're directly over the canvas (not a block)
+        if (isOverCurrent) {
+          // If it's a layout block (section, row, column, container), add directly to root
+          if (['section', 'row', 'column', 'container'].includes(item.type)) {
+            onAddBlock(item.type);
           } else {
-            // Fallback: create structure manually
-            onAddBlock('section');
+            // For content blocks on empty canvas, use the structure helper
+            if (onAddBlockWithStructure) {
+              onAddBlockWithStructure(item.type);
+            } else {
+              // Fallback: create structure manually
+              onAddBlock('section');
+            }
           }
         }
       }

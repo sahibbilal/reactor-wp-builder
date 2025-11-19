@@ -1,19 +1,22 @@
 .reactor-canvas-wrapper {
   flex: 1;
   overflow-y: auto;
-  background: #f0f0f1;
+  background: #f6f7f7;
   display: flex;
   justify-content: center;
-  padding: 20px;
+  padding: 30px;
 }
 
 .reactor-canvas {
   width: 100%;
+  max-width: 1200px;
   min-height: 100%;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
   position: relative;
-  transition: max-width 0.3s;
+  transition: max-width 0.3s ease;
+  border: 1px solid #dcdcde;
 }
 
 .reactor-canvas.drag-over {

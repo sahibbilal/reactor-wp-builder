@@ -106,7 +106,9 @@ class Rest_Api {
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_layout' ),
-				'permission_callback' => array( $this, 'check_permissions' ),
+				'permission_callback' => function( $request ) {
+					return $this->check_permissions( $request );
+				},
 				'args'                => array(
 					'id' => array(
 						'required' => true,
@@ -123,7 +125,9 @@ class Rest_Api {
 			array(
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'save_layout' ),
-				'permission_callback' => array( $this, 'check_permissions' ),
+				'permission_callback' => function( $request ) {
+					return $this->check_permissions( $request );
+				},
 				'args'                => array(
 					'id' => array(
 						'required' => true,
@@ -154,9 +158,22 @@ class Rest_Api {
 	/**
 	 * Check if user has permission.
 	 *
+	 * @param \WP_REST_Request $request Request object.
 	 * @return bool
 	 */
-	public function check_permissions(): bool {
+	public function check_permissions( \WP_REST_Request $request = null ): bool {
+		// For layout endpoints, check if user can edit the post
+		if ( $request && strpos( $request->get_route(), '/layouts/' ) !== false ) {
+			$post_id = $request->get_param( 'id' );
+			if ( $post_id ) {
+				$post = get_post( $post_id );
+				if ( $post ) {
+					return current_user_can( 'edit_post', $post_id );
+				}
+			}
+		}
+		
+		// For template endpoints, require manage_options
 		return current_user_can( 'manage_options' );
 	}
 
