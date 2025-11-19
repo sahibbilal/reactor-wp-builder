@@ -1,0 +1,78 @@
+.reactor-block-panel {
+  flex: 1;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.reactor-block-panel-header {
+  padding: 16px;
+  border-bottom: 1px solid #ddd;
+  background: #f6f7f7;
+}
+
+.reactor-block-panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2327;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reactor-block-panel-content {
+  padding: 12px;
+}
+
+.reactor-block-group {
+  margin-bottom: 24px;
+}
+
+.reactor-block-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #646970;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding: 0 8px;
+}
+
+.reactor-block-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: grab;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.reactor-block-item:hover {
+  background: #f6f7f7;
+  border-color: #2271b1;
+}
+
+.reactor-block-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.reactor-block-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.reactor-block-label {
+  font-size: 14px;
+  color: #2c3338;
+  font-weight: 500;
+}
+

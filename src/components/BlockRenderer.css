@@ -1,0 +1,89 @@
+.reactor-block-wrapper {
+  position: relative;
+  margin: 2px 0;
+  min-height: 30px;
+}
+
+.reactor-block-wrapper.selected {
+  outline: 2px solid #2271b1;
+  outline-offset: 2px;
+}
+
+.reactor-block-wrapper.drag-over {
+  outline: 2px dashed #2271b1;
+  outline-offset: 2px;
+  background: rgba(34, 113, 177, 0.05);
+}
+
+.reactor-block-toolbar {
+  position: absolute;
+  top: -32px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #2271b1;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 12px;
+  z-index: 10;
+  border-radius: 4px 4px 0 0;
+}
+
+.reactor-block-type {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.reactor-block-delete {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.reactor-block-delete:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.reactor-block-content {
+  position: relative;
+}
+
+.reactor-section.selected,
+.reactor-row.selected,
+.reactor-column.selected,
+.reactor-container.selected,
+.reactor-heading.selected,
+.reactor-text.selected,
+.reactor-image.selected,
+.reactor-button.selected,
+.reactor-divider.selected {
+  position: relative;
+}
+
+.reactor-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f1;
+  border: 2px dashed #ddd;
+  color: #646970;
+  min-height: 100px;
+}
+
+.reactor-image-placeholder span {
+  font-size: 14px;
+}
+
