@@ -103,3 +103,23 @@
   cursor: pointer;
 }
 
+.reactor-setting-group {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.reactor-setting-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.reactor-setting-group h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2327;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+

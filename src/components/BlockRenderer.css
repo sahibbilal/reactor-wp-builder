@@ -1,23 +1,106 @@
 .reactor-block-wrapper {
   position: relative;
-  margin: 2px 0;
+  margin: 4px 0;
   min-height: 30px;
+  transition: all 0.2s ease;
+}
+
+/* Column wrapper - inherits width from column props */
+.reactor-block-wrapper.reactor-column-wrapper {
+  /* Column width is applied via inline style from getWrapperStyle() */
+  /* The width will be respected by the flex container (row) */
+  flex-shrink: 0;
+  flex-grow: 0;
+  max-width: 100%;
+}
+
+.reactor-block-wrapper.has-children {
+  min-height: 50px;
+}
+
+.reactor-block-label {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(34, 113, 177, 0.95);
+  color: #fff;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.85;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Row selection area - allows clicking on row even when columns are present */
+.reactor-row-selection-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  z-index: 4;
+  cursor: pointer;
+  background: transparent;
+}
+
+.reactor-row-selection-area:hover {
+  background: rgba(34, 113, 177, 0.05);
+}
+
+.reactor-block-wrapper.selected .reactor-block-label {
+  opacity: 1;
+  background: #2271b1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.reactor-block-add-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  pointer-events: none;
+}
+
+.reactor-block-add-button * {
+  pointer-events: all;
 }
 
 .reactor-block-wrapper.selected {
   outline: 2px solid #2271b1;
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
 }
 
 .reactor-block-wrapper.drag-over {
   outline: 2px dashed #2271b1;
   outline-offset: 2px;
-  background: rgba(34, 113, 177, 0.05);
+  background: rgba(34, 113, 177, 0.08);
+  border-radius: 4px;
+  position: relative;
+}
+
+.reactor-block-wrapper.drag-over::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #2271b1;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .reactor-block-toolbar {
   position: absolute;
-  top: -32px;
+  top: -36px;
   left: 0;
   right: 0;
   display: flex;
@@ -25,10 +108,12 @@
   justify-content: space-between;
   background: #2271b1;
   color: #fff;
-  padding: 4px 8px;
+  padding: 6px 12px;
   font-size: 12px;
+  font-weight: 600;
   z-index: 10;
   border-radius: 4px 4px 0 0;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .reactor-block-type {
@@ -59,6 +144,23 @@
 
 .reactor-block-content {
   position: relative;
+  min-height: 40px;
+}
+
+.reactor-block-drop-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  border: 2px dashed #2271b1;
+  border-radius: 4px;
+  background: rgba(34, 113, 177, 0.05);
+  color: #2271b1;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 8px;
+  padding: 16px;
+  text-align: center;
 }
 
 .reactor-section.selected,

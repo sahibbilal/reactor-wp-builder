@@ -1,16 +1,35 @@
 import React from 'react';
 
-function Button({ text, link, backgroundColor, color, padding, borderRadius, className, selected }) {
+function Button({ 
+  text, 
+  link, 
+  backgroundColor, 
+  color, 
+  fontSize,
+  fontWeight,
+  textAlign,
+  padding, 
+  margin,
+  borderRadius, 
+  borderWidth,
+  borderColor,
+  className, 
+  selected 
+}) {
   const style = {
     backgroundColor: backgroundColor || '#0073aa',
     color: color || '#ffffff',
     padding: padding || '10px 20px',
+    margin: margin || '0',
     borderRadius: borderRadius || '4px',
-    border: 'none',
+    ...(borderWidth ? { borderWidth, borderStyle: 'solid' } : { border: 'none' }),
+    ...(borderColor ? { borderColor } : {}),
     cursor: 'pointer',
     display: 'inline-block',
     textDecoration: 'none',
-    fontSize: '16px',
+    fontSize: fontSize || '16px',
+    fontWeight: fontWeight || 'normal',
+    textAlign: textAlign || 'center',
   };
 
   const content = text || 'Button';
