@@ -1,0 +1,207 @@
+{
+  "version": "1.0.0",
+  "sections": [
+    {
+      "id": "section-1",
+      "type": "section",
+      "props": {
+        "padding": "40px 20px",
+        "backgroundColor": "#ffffff",
+        "margin": "0"
+      },
+      "children": [
+        {
+          "id": "row-1",
+          "type": "row",
+          "props": {
+            "gap": "20px",
+            "alignItems": "stretch",
+            "justifyContent": "flex-start"
+          },
+          "children": [
+            {
+              "id": "column-1",
+              "type": "column",
+              "props": {
+                "width": "50%",
+                "padding": "10px"
+              },
+              "children": [
+                {
+                  "id": "heading-1",
+                  "type": "heading",
+                  "props": {
+                    "content": "Welcome to Reactor Builder",
+                    "level": 2,
+                    "fontSize": "32px",
+                    "color": "#1d2327"
+                  },
+                  "children": null
+                },
+                {
+                  "id": "text-1",
+                  "type": "text",
+                  "props": {
+                    "content": "This is a sample layout created with Reactor WP Builder. You can drag and drop blocks to create your own layouts.",
+                    "fontSize": "16px",
+                    "color": "#646970"
+                  },
+                  "children": null
+                },
+                {
+                  "id": "button-1",
+                  "type": "button",
+                  "props": {
+                    "text": "Get Started",
+                    "link": "#",
+                    "backgroundColor": "#2271b1",
+                    "color": "#ffffff",
+                    "padding": "12px 24px",
+                    "borderRadius": "4px"
+                  },
+                  "children": null
+                }
+              ]
+            },
+            {
+              "id": "column-2",
+              "type": "column",
+              "props": {
+                "width": "50%",
+                "padding": "10px"
+              },
+              "children": [
+                {
+                  "id": "image-1",
+                  "type": "image",
+                  "props": {
+                    "src": "https://via.placeholder.com/600x400",
+                    "alt": "Sample Image",
+                    "width": "100%"
+                  },
+                  "children": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-2",
+      "type": "section",
+      "props": {
+        "padding": "60px 20px",
+        "backgroundColor": "#f6f7f7",
+        "margin": "0"
+      },
+      "children": [
+        {
+          "id": "row-2",
+          "type": "row",
+          "props": {
+            "gap": "30px",
+            "alignItems": "flex-start",
+            "justifyContent": "center"
+          },
+          "children": [
+            {
+              "id": "column-3",
+              "type": "column",
+              "props": {
+                "width": "33.333%",
+                "padding": "20px"
+              },
+              "children": [
+                {
+                  "id": "heading-2",
+                  "type": "heading",
+                  "props": {
+                    "content": "Feature One",
+                    "level": 3,
+                    "fontSize": "24px",
+                    "color": "#1d2327"
+                  },
+                  "children": null
+                },
+                {
+                  "id": "text-2",
+                  "type": "text",
+                  "props": {
+                    "content": "Description of feature one goes here.",
+                    "fontSize": "14px",
+                    "color": "#646970"
+                  },
+                  "children": null
+                }
+              ]
+            },
+            {
+              "id": "column-4",
+              "type": "column",
+              "props": {
+                "width": "33.333%",
+                "padding": "20px"
+              },
+              "children": [
+                {
+                  "id": "heading-3",
+                  "type": "heading",
+                  "props": {
+                    "content": "Feature Two",
+                    "level": 3,
+                    "fontSize": "24px",
+                    "color": "#1d2327"
+                  },
+                  "children": null
+                },
+                {
+                  "id": "text-3",
+                  "type": "text",
+                  "props": {
+                    "content": "Description of feature two goes here.",
+                    "fontSize": "14px",
+                    "color": "#646970"
+                  },
+                  "children": null
+                }
+              ]
+            },
+            {
+              "id": "column-5",
+              "type": "column",
+              "props": {
+                "width": "33.333%",
+                "padding": "20px"
+              },
+              "children": [
+                {
+                  "id": "heading-4",
+                  "type": "heading",
+                  "props": {
+                    "content": "Feature Three",
+                    "level": 3,
+                    "fontSize": "24px",
+                    "color": "#1d2327"
+                  },
+                  "children": null
+                },
+                {
+                  "id": "text-4",
+                  "type": "text",
+                  "props": {
+                    "content": "Description of feature three goes here.",
+                    "fontSize": "14px",
+                    "color": "#646970"
+                  },
+                  "children": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

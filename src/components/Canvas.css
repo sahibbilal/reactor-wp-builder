@@ -1,0 +1,48 @@
+.reactor-canvas-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  background: #f0f0f1;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.reactor-canvas {
+  width: 100%;
+  min-height: 100%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: max-width 0.3s;
+}
+
+.reactor-canvas.drag-over {
+  outline: 2px dashed #2271b1;
+  outline-offset: -2px;
+}
+
+.reactor-canvas.preview-mode .reactor-block-toolbar {
+  display: none;
+}
+
+.reactor-canvas.preview-mode .reactor-block-wrapper.selected {
+  outline: none;
+}
+
+.reactor-canvas-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #646970;
+  font-size: 16px;
+}
+
+.reactor-canvas.device-tablet {
+  max-width: 768px;
+}
+
+.reactor-canvas.device-mobile {
+  max-width: 375px;
+}
+
