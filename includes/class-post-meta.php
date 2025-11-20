@@ -141,9 +141,18 @@ class Post_Meta {
 			return $content;
 		}
 		
+		// Enqueue CSS file if it exists
+		$css_url = get_post_meta( $post->ID, '_reactor_css_file', true );
+		if ( $css_url ) {
+			$handle = 'reactor-layout-' . $post->post_type . '-' . $post->ID;
+			wp_enqueue_style( $handle, $css_url, array(), get_post_modified_time( 'U', $post ) );
+		}
+
 		// Render the layout instead of default content.
 		ob_start();
+		echo '<div class="reactor-layout">';
 		$this->render_layout_html( $layout );
+		echo '</div>';
 		$layout_html = ob_get_clean();
 		
 		return $layout_html;
@@ -159,13 +168,9 @@ class Post_Meta {
 			return;
 		}
 		
-		echo '<div class="reactor-layout">';
-		
 		foreach ( $layout['sections'] as $section ) {
 			$this->render_block( $section );
 		}
-		
-		echo '</div>';
 	}
 	
 	/**
@@ -179,52 +184,22 @@ class Post_Meta {
 		$children = $block['children'] ?? array();
 		
 		// Get block attributes.
+		$block_id = $block['id'] ?? '';
 		$classes = array( 'reactor-block', 'reactor-block-' . $type );
 		if ( ! empty( $props['className'] ) ) {
 			$classes[] = $props['className'];
 		}
 		
-		// Build styles array with all properties.
-		$styles = array();
-		if ( ! empty( $props['padding'] ) ) {
-			$styles[] = 'padding: ' . esc_attr( $props['padding'] );
-		}
-		if ( ! empty( $props['margin'] ) ) {
-			$styles[] = 'margin: ' . esc_attr( $props['margin'] );
-		}
-		if ( ! empty( $props['backgroundColor'] ) ) {
-			$styles[] = 'background-color: ' . esc_attr( $props['backgroundColor'] );
-		}
-		if ( ! empty( $props['color'] ) ) {
-			$styles[] = 'color: ' . esc_attr( $props['color'] );
-		}
-		if ( ! empty( $props['borderWidth'] ) ) {
-			$styles[] = 'border-width: ' . esc_attr( $props['borderWidth'] );
-			$styles[] = 'border-style: solid';
-		}
-		if ( ! empty( $props['borderRadius'] ) ) {
-			$styles[] = 'border-radius: ' . esc_attr( $props['borderRadius'] );
-		}
-		if ( ! empty( $props['borderColor'] ) ) {
-			$styles[] = 'border-color: ' . esc_attr( $props['borderColor'] );
-		}
-		if ( ! empty( $props['fontSize'] ) ) {
-			$styles[] = 'font-size: ' . esc_attr( $props['fontSize'] );
-		}
-		if ( ! empty( $props['fontWeight'] ) ) {
-			$styles[] = 'font-weight: ' . esc_attr( $props['fontWeight'] );
-		}
-		if ( ! empty( $props['textAlign'] ) ) {
-			$styles[] = 'text-align: ' . esc_attr( $props['textAlign'] );
-		}
-		
-		$style_attr = ! empty( $styles ) ? ' style="' . implode( '; ', $styles ) . '"' : '';
+		// Add data-block-id attribute
+		$data_attr = $block_id ? ' data-block-id="' . esc_attr( $block_id ) . '"' : '';
 		$class_attr = ' class="' . esc_attr( implode( ' ', $classes ) ) . '"';
+		
+		// No inline styles - all styles are in external CSS file
 		
 		// Render based on block type.
 		switch ( $type ) {
 			case 'section':
-				echo '<section' . $class_attr . $style_attr . '>';
+				echo '<section' . $class_attr . $data_attr . '>';
 				foreach ( $children as $child ) {
 					$this->render_block( $child );
 				}
@@ -232,20 +207,8 @@ class Post_Meta {
 				break;
 				
 			case 'row':
-				// Add flex styles for rows.
-				$row_styles = $styles;
-				$row_styles[] = 'display: flex';
-				if ( ! empty( $props['gap'] ) ) {
-					$row_styles[] = 'gap: ' . esc_attr( $props['gap'] );
-				}
-				if ( ! empty( $props['justifyContent'] ) ) {
-					$row_styles[] = 'justify-content: ' . esc_attr( $props['justifyContent'] );
-				}
-				if ( ! empty( $props['alignItems'] ) ) {
-					$row_styles[] = 'align-items: ' . esc_attr( $props['alignItems'] );
-				}
-				$row_style_attr = ! empty( $row_styles ) ? ' style="' . implode( '; ', $row_styles ) . '"' : '';
-				echo '<div' . $class_attr . $row_style_attr . '>';
+				// All row styles are in external CSS file
+				echo '<div' . $class_attr . $data_attr . '>';
 				foreach ( $children as $child ) {
 					$this->render_block( $child );
 				}
@@ -253,12 +216,8 @@ class Post_Meta {
 				break;
 				
 			case 'column':
-				$col_styles = $styles;
-				if ( ! empty( $props['width'] ) ) {
-					$col_styles[] = 'width: ' . esc_attr( $props['width'] );
-				}
-				$col_style_attr = ! empty( $col_styles ) ? ' style="' . implode( '; ', $col_styles ) . '"' : '';
-				echo '<div' . $class_attr . $col_style_attr . '>';
+				// All column styles are in external CSS file
+				echo '<div' . $class_attr . $data_attr . '>';
 				foreach ( $children as $child ) {
 					$this->render_block( $child );
 				}
@@ -269,12 +228,12 @@ class Post_Meta {
 				$level = ! empty( $props['level'] ) ? absint( $props['level'] ) : 2;
 				$level = min( max( $level, 1 ), 6 );
 				$text = ! empty( $props['content'] ) ? wp_kses_post( $props['content'] ) : ( ! empty( $props['text'] ) ? wp_kses_post( $props['text'] ) : '' );
-				echo '<h' . $level . $class_attr . $style_attr . '>' . $text . '</h' . $level . '>';
+				echo '<h' . $level . $class_attr . $data_attr . '>' . $text . '</h' . $level . '>';
 				break;
 				
 			case 'text':
 				$text = ! empty( $props['content'] ) ? wp_kses_post( $props['content'] ) : ( ! empty( $props['text'] ) ? wp_kses_post( $props['text'] ) : '' );
-				echo '<div' . $class_attr . $style_attr . '>' . wpautop( $text ) . '</div>';
+				echo '<div' . $class_attr . $data_attr . '>' . wpautop( $text ) . '</div>';
 				break;
 				
 			case 'image':
@@ -300,7 +259,7 @@ class Post_Meta {
 				}
 				
 				if ( $src ) {
-					echo '<img src="' . $src . '" alt="' . $alt . '"' . $class_attr . $style_attr . ' />';
+					echo '<img src="' . $src . '" alt="' . $alt . '"' . $class_attr . $data_attr . ' />';
 				}
 				break;
 				
@@ -308,11 +267,11 @@ class Post_Meta {
 				$text = ! empty( $props['text'] ) ? esc_html( $props['text'] ) : '';
 				$url = ! empty( $props['url'] ) ? esc_url( $props['url'] ) : ( ! empty( $props['link'] ) ? esc_url( $props['link'] ) : '#' );
 				$target = ! empty( $props['target'] ) && $props['target'] === '_blank' ? ' target="_blank" rel="noopener noreferrer"' : '';
-				echo '<a href="' . $url . '"' . $target . $class_attr . $style_attr . '>' . $text . '</a>';
+				echo '<a href="' . $url . '"' . $target . $class_attr . $data_attr . '>' . $text . '</a>';
 				break;
 				
 			case 'divider':
-				echo '<hr' . $class_attr . $style_attr . ' />';
+				echo '<hr' . $class_attr . $data_attr . ' />';
 				break;
 				
 			case 'gallery':
@@ -321,14 +280,9 @@ class Post_Meta {
 				$gap = ! empty( $props['gap'] ) ? esc_attr( $props['gap'] ) : '10px';
 				$image_size = ! empty( $props['imageSize'] ) ? $props['imageSize'] : 'medium';
 				
-				$gallery_styles = $styles;
-				$gallery_styles[] = 'display: grid';
-				$gallery_styles[] = 'grid-template-columns: repeat(' . $columns . ', 1fr)';
-				$gallery_styles[] = 'gap: ' . $gap;
-				$gallery_style_attr = ! empty( $gallery_styles ) ? ' style="' . implode( '; ', $gallery_styles ) . '"' : '';
-				
+				// All gallery styles are in external CSS file
 				if ( ! empty( $images ) && count( $images ) > 0 ) {
-					echo '<div' . $class_attr . $gallery_style_attr . '>';
+					echo '<div' . $class_attr . $data_attr . '>';
 					foreach ( $images as $image ) {
 						if ( ! is_array( $image ) ) {
 							continue;
@@ -365,7 +319,7 @@ class Post_Meta {
 				
 			case 'container':
 			default:
-				echo '<div' . $class_attr . $style_attr . '>';
+				echo '<div' . $class_attr . $data_attr . '>';
 				foreach ( $children as $child ) {
 					$this->render_block( $child );
 				}

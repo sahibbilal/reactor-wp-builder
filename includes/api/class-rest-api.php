@@ -220,11 +220,25 @@ class Rest_Api {
 			);
 		}
 
+		// Generate and save CSS file
+		$post = get_post( $post_id );
+		$post_type = $post ? $post->post_type : 'post';
+		
+		$css_generator = new \Reactor\WP\Builder\Includes\CSS_Generator();
+		$css = $css_generator->generate_css( $layout, $post_id, $post_type );
+		$css_url = $css_generator->save_css_file( $css, $post_id, $post_type );
+
+		// Save CSS file URL to post meta
+		if ( $css_url ) {
+			update_post_meta( $post_id, '_reactor_css_file', $css_url );
+		}
+
 		return new \WP_REST_Response(
 			array(
 				'success' => true,
 				'post_id' => $post_id,
 				'layout'  => $layout,
+				'css_url' => $css_url,
 			),
 			200
 		);
@@ -238,9 +252,10 @@ class Rest_Api {
 	 */
 	public function delete_layout( \WP_REST_Request $request ) {
 		$post_id = $request->get_param( 'id' );
+		$post = get_post( $post_id );
 
 		// Validate post exists.
-		if ( ! get_post( $post_id ) ) {
+		if ( ! $post ) {
 			return new \WP_Error(
 				'invalid_post',
 				__( 'Post not found.', 'reactor-wp-builder' ),
@@ -248,10 +263,15 @@ class Rest_Api {
 			);
 		}
 
+		// Delete CSS file
+		$css_generator = new \Reactor\WP\Builder\Includes\CSS_Generator();
+		$css_generator->delete_css_file( $post_id, $post->post_type );
+
 		// Delete layout from post meta.
 		$deleted = delete_post_meta( $post_id, '_reactor_layout' );
+		delete_post_meta( $post_id, '_reactor_css_file' );
 
-		if ( ! $deleted ) {
+		if ( false === $deleted ) {
 			return new \WP_Error(
 				'delete_failed',
 				__( 'Failed to delete layout.', 'reactor-wp-builder' ),

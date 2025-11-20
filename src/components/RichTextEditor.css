@@ -1,0 +1,23 @@
+.reactor-rich-text-editor {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.reactor-rich-text-editor .ql-container {
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.reactor-rich-text-editor .ql-editor {
+  min-height: 200px;
+}
+
+.reactor-rich-text-editor .ql-editor.ql-blank::before {
+  color: #a7aaad;
+  font-style: italic;
+}
+

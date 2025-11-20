@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './SettingsPanel.css';
 import { MediaLibraryButton } from './MediaLibrary';
+import RichTextEditor from './RichTextEditor';
 
 // Reusable Number Input with Unit Selector
 function NumberInputWithUnit({ label, value, onChange, placeholder = '0', min = 0, units = ['px', 'rem', 'cm'] }) {
@@ -280,10 +281,10 @@ function ContentSettings({ block, onUpdate, layout }) {
           <>
             <div className="reactor-setting-field reactor-textarea-field">
               <label>Content</label>
-              <textarea
+              <RichTextEditor
                 value={props.content || props.text || ''}
-                onChange={(e) => handleChange('content', e.target.value)}
-                rows={4}
+                onChange={(html) => handleChange('content', html)}
+                placeholder="Enter text... You can add multiple paragraphs, headings, lists, and more."
               />
             </div>
           </>

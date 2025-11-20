@@ -38,10 +38,12 @@ function Container({
     ...(borderWidth ? { borderWidth, borderStyle: borderStyle || 'solid' } : {}),
     ...(borderRadius ? { borderRadius } : {}),
     ...(borderColor ? { borderColor } : {}),
-    ...(backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}),
-    ...(backgroundSize ? { backgroundSize } : {}),
-    ...(backgroundPosition ? { backgroundPosition } : {}),
-    ...(backgroundRepeat ? { backgroundRepeat } : {}),
+    ...(backgroundImage ? { 
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: backgroundSize || 'cover',
+      backgroundPosition: backgroundPosition || 'center',
+      backgroundRepeat: backgroundRepeat || 'no-repeat'
+    } : {}),
     ...(height ? { height } : {}),
     ...(minWidth ? { minWidth } : {}),
     ...(opacity !== undefined ? { opacity } : {}),

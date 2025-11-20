@@ -45,10 +45,12 @@ function Text({
     ...(borderWidth ? { borderWidth, borderStyle: borderStyle || 'solid' } : {}),
     ...(borderRadius ? { borderRadius } : {}),
     ...(borderColor ? { borderColor } : {}),
-    ...(backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}),
-    ...(backgroundSize ? { backgroundSize } : {}),
-    ...(backgroundPosition ? { backgroundPosition } : {}),
-    ...(backgroundRepeat ? { backgroundRepeat } : {}),
+    ...(backgroundImage ? { 
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: backgroundSize || 'cover',
+      backgroundPosition: backgroundPosition || 'center',
+      backgroundRepeat: backgroundRepeat || 'no-repeat'
+    } : {}),
     ...(width ? { width } : {}),
     ...(height ? { height } : {}),
     ...(minWidth ? { minWidth } : {}),
@@ -59,14 +61,28 @@ function Text({
     ...(transition ? { transition } : {}),
   };
 
+  // Render HTML content if it contains HTML tags, otherwise render as plain text
+  const renderContent = () => {
+    const contentValue = content || '';
+    // If empty, show placeholder
+    if (!contentValue || contentValue.trim() === '') {
+      return <span style={{ color: '#a7aaad', fontStyle: 'italic' }}>Text block</span>;
+    }
+    // Check if content contains HTML tags
+    if (/<[a-z][\s\S]*>/i.test(contentValue)) {
+      return <div dangerouslySetInnerHTML={{ __html: contentValue }} />;
+    }
+    return contentValue;
+  };
+
   return (
-    <p
+    <div
       id={id || undefined}
       className={`reactor-text ${className || ''} ${selected ? 'selected' : ''}`}
       style={style}
     >
-      {content || 'Text block'}
-    </p>
+      {renderContent()}
+    </div>
   );
 }
 
